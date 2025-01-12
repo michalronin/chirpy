@@ -13,7 +13,8 @@ func main() {
 		Handler: mux,
 		Addr:    ":" + port,
 	}
-	mux.Handle("/", http.FileServer(http.Dir("./")))
+	handler := http.FileServer(http.Dir("./"))
+	mux.Handle("/", handler)
 	log.Printf("Serving files from %s on port: %s\n", filePathRoot, port)
 	log.Fatal(server.ListenAndServe())
 }
