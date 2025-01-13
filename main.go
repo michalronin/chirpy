@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync/atomic"
 )
 
@@ -21,8 +21,8 @@ func main() {
 	handler := http.FileServer(http.Dir("./"))
 	mux.Handle("/app/", http.StripPrefix("/app/", apiCfg.middlewareMetricsIncrement(handler)))
 	mux.HandleFunc("GET /api/healthz", readinessHandler)
-	mux.HandleFunc("GET /api/metrics", apiCfg.metricsHandler)
-	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	log.Printf("Serving files from %s on port: %s\n", filePathRoot, port)
 	log.Fatal(server.ListenAndServe())
 }
@@ -34,10 +34,19 @@ func readinessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Add("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	hits := int(cfg.fileserverHits.Load())
-	w.Write([]byte("Hits: " + strconv.Itoa(hits)))
+	template := `
+		<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+  </body>
+</html>
+		`
+	htmlContent := fmt.Sprintf(template, hits)
+	w.Write([]byte(htmlContent))
 }
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
