@@ -17,6 +17,8 @@ import (
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
@@ -28,6 +30,7 @@ func main() {
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
+		platform:       platform,
 	}
 	server := &http.Server{
 		Handler: mux,
@@ -39,6 +42,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 	log.Printf("Serving files from %s on port: %s\n", filePathRoot, port)
 	log.Fatal(server.ListenAndServe())
 }
@@ -67,6 +71,15 @@ func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	if cfg.platform != "dev" {
+		w.WriteHeader(403)
+		return
+	}
+	if err := cfg.db.DeleteAllUsers(r.Context()); err != nil {
+		fmt.Printf("error clearing users from database: %s", err)
+		w.WriteHeader(500)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	cfg.fileserverHits = atomic.Int32{}
 }
@@ -74,6 +87,7 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
 
 func (cfg *apiConfig) middlewareMetricsIncrement(next http.Handler) http.Handler {
