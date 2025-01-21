@@ -29,7 +29,6 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	type errorResponse struct {
 		Error string `json:"error"`
 	}
-
 	// decode
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
@@ -66,7 +65,6 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		"fornax":    {},
 	}
 	cleaned := getCleanedBody(params.Body, badWords)
-
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   cleaned,
 		UserID: id,
