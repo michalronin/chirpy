@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/michalronin/chirpy/internal/auth"
 	"github.com/michalronin/chirpy/internal/database"
 )
 
@@ -36,6 +38,19 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(400)
 		return
 	}
+	// validate token
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("error validating token: %s", err)
+		w.WriteHeader(401)
+		return
+	}
+	id, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		log.Printf("error validating token: %s", err)
+		w.WriteHeader(401)
+		return
+	}
 	// Validate chirp length
 	if len(params.Body) > 140 {
 		resp := errorResponse{Error: "Chirp is too long"}
@@ -54,7 +69,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   cleaned,
-		UserID: params.UserID,
+		UserID: id,
 	})
 	if err != nil {
 		fmt.Printf("error writing chirp to database: %s", err)
