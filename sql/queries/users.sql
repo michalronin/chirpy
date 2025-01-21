@@ -15,3 +15,9 @@ DELETE FROM users;
 -- name: GetUserByEmail :one
 SELECT id, created_at, updated_at, email, hashed_password FROM users
 WHERE email = $1;
+
+-- name: UpdateUser :one
+UPDATE users
+SET email = $2, hashed_password = $3, updated_at = NOW()
+WHERE id = $1
+RETURNING users.id, users.email, users.created_at, users.updated_at;

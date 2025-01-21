@@ -10,7 +10,7 @@ func TestMakeJWT(t *testing.T) {
 	userID := uuid.New()
 	secret := "test-secret"
 	t.Run("valid token", func(t *testing.T) {
-		token, err := MakeJWT(userID, secret, 1*time.Second)
+		token, err := MakeJWT(userID, secret)
 		if err != nil {
 			t.Fatalf("failed to create token: %v", err)
 		}
@@ -30,7 +30,7 @@ func TestValidateJWT(t *testing.T) {
 
 	t.Run("wrong secret", func(t *testing.T) {
 		// First create a valid token
-		token, err := MakeJWT(userID, secret, time.Second)
+		token, err := MakeJWT(userID, secret)
 		if err != nil {
 			t.Fatalf("failed to create token: %v", err)
 		}
@@ -44,7 +44,7 @@ func TestValidateJWT(t *testing.T) {
 
 	t.Run("expired token", func(t *testing.T) {
 		// Create a token that expires very quickly
-		token, err := MakeJWT(userID, secret, time.Millisecond)
+		token, err := MakeJWT(userID, secret)
 		if err != nil {
 			t.Fatalf("failed to create token: %v", err)
 		}
