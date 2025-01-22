@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/michalronin/chirpy/internal/database"
 )
 
 type Chirp struct {
@@ -18,14 +19,34 @@ type Chirp struct {
 }
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
-
-	chirps, err := cfg.db.GetAllChirps(r.Context())
-	if err != nil {
-		fmt.Printf("error retrieving chirps: %s", err)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(500)
-		return
+	s := r.URL.Query().Get("author_id")
+	chirps := []database.Chirp{}
+	if len(s) == 0 {
+		allChirps, err := cfg.db.GetAllChirps(r.Context())
+		if err != nil {
+			fmt.Printf("error retrieving chirps: %s", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			return
+		}
+		chirps = allChirps
+	} else {
+		userID, err := uuid.Parse(s)
+		if err != nil {
+			fmt.Printf("error parsing user ID: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+		chirpsPerUser, err := cfg.db.GetAllChirpsForUser(r.Context(), userID)
+		if err != nil {
+			fmt.Printf("error retrieving chirps: %s", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			return
+		}
+		chirps = chirpsPerUser
 	}
+
 	resp := []Chirp{}
 	for _, dbChirp := range chirps {
 		chirp := Chirp{
