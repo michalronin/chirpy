@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,7 @@ type Chirp struct {
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	s := r.URL.Query().Get("author_id")
+	sorting := r.URL.Query().Get("sort")
 	chirps := []database.Chirp{}
 	if len(s) == 0 {
 		allChirps, err := cfg.db.GetAllChirps(r.Context())
@@ -48,6 +50,11 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := []Chirp{}
+	if len(sorting) == 0 || sorting == "asc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.Before(chirps[j].CreatedAt) })
+	} else if sorting == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.After(chirps[j].CreatedAt) })
+	}
 	for _, dbChirp := range chirps {
 		chirp := Chirp{
 			ID:        dbChirp.ID,
