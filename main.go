@@ -52,6 +52,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpHandler)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.deleteChirpHandler)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.polkaWebhookHandler)
 	log.Printf("Serving files from %s on port: %s\n", filePathRoot, port)
 	log.Fatal(server.ListenAndServe())
 }
